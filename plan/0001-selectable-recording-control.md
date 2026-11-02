@@ -15,10 +15,10 @@ The launcher stops the recorder last. No raw physical-camera image publisher,
 commits, pushes or application/flight lifecycle changes are included.
 
 ## Status
-Implemented; 92 recorder tests and fresh installed roundtrip passed. Not committed.
+Implemented; 92 recorder tests and fresh installed roundtrip passed.
 
 ## Implementation commit
-Pending
+`e527a9aab189bde69e580b53b4bd5148cf7a7f85`
 
 ## Verification results
 - 20 bringup tests passed: configuration/dry-run, process startup/failure/signals,
@@ -48,3 +48,13 @@ Pending
 
 Verification logs: /tmp/bringup-*-final.log; installed check:
 /tmp/bringup-installed-final.log. Local sources and wheel payloads were compared.
+
+## Commit record — 2026-11-02
+
+The verification notes above describe the pre-commit work. Implementation is
+now committed; nothing was pushed. These are implementation hashes, rather than
+the subsequent documentation commits that record them.
+
+| Repository | Implementation commit |
+|---|---|
+| mcap_bagger | `e527a9aab189bde69e580b53b4bd5148cf7a7f85` |
