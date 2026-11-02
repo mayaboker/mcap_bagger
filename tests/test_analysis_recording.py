@@ -3,6 +3,7 @@ from dataclasses import replace
 import json
 from pathlib import Path
 import time
+import pytest
 
 from jsonschema import Draft202012Validator
 from mcap.reader import make_reader
@@ -27,7 +28,8 @@ def feedback_topic():
     return Topic(key='flight/drone_1/feedback',input='json',schema_name='flight_feedback',schema_encoding='jsonschema',schema_data=json.dumps(schema).encode(),validator=Draft202012Validator(schema))
 
 
-def test_current_msp_analysis_packet_finalizes_recording(config):
+@pytest.mark.parametrize('phase', ['ARMED_IDLE', 'LOS_ACQUIRE'])
+def test_current_msp_analysis_packet_finalizes_recording(config, phase):
     topic=msp_topic()
     source=dict(physics_id='p',episode_id='e',stream_id='s',step_index=1,simulation_time_s=1.,measurement_us=1000)
     delivery=dict(requests_hz=10,responses_hz=10,queue_delay_mean_s=0.,queue_delay_max_s=0.,response_turnaround_mean_s=.001,response_turnaround_max_s=.001)
@@ -37,11 +39,12 @@ def test_current_msp_analysis_packet_finalizes_recording(config):
                 msp_delivery=dict(delivery,attitude=dict(delivery),altitude=dict(delivery)),
                 sensor_feedback=dict(window_s=1.,expected_hz=120.,observed_hz=120.,feedback_age_s=.001,
                                      attitude_age_s=.001,barometer_age_s=.001,image_age_s=.01,
-                                     image_attitude_offset_s=.002,vision_reason='usable',mission_phase='LOS_ACQUIRE',
+                                     image_attitude_offset_s=.002,vision_reason='usable',mission_phase=phase,
                                      input_feedback_queue_depth=1,input_dropped_feedback=0,input_malformed_messages=0,
                                      input_age_s=.001,output_bbox_queue_depth=0,output_los_queue_depth=0,
                                      output_msp_delivery_queue_depth=0,output_dropped_bbox=0,output_dropped_los=0,
-                                     output_dropped_msp_delivery=0),
+                                     output_dropped_msp_delivery=0,output_parameters_queue_depth=2,
+                                     output_dropped_parameters=5),
                 attitude=None,altitude=None,status={'mode_flags':1,'arming_disabled_flags':0,'received_at':1.})
     run=Recording(replace(config,topics=(topic,)))
     run.start()
@@ -52,6 +55,10 @@ def test_current_msp_analysis_packet_finalizes_recording(config):
     assert run.error is None
     assert run.path.suffix == '.mcap'
     assert not run.final_path.with_suffix('.mcap.partial').exists()
+    with run.path.open('rb') as stream:
+        messages=list(make_reader(stream,validate_crcs=True).iter_messages())
+    stored=[json.loads(message.data) for _,channel,message in messages if channel.topic==topic.key]
+    assert stored==[packet]
 
 
 def test_current_feedback_with_agl_finalizes_recording(config):

@@ -229,3 +229,27 @@ Library callers can use `Recorder.init(yaml_path, output_dir=path)` to override
 the immutable loaded configuration. Initialization resolves paths without creating
 directories; the controlled CLI performs preflight checks, while manual/library
 recording still validates writes when starting a recording.
+
+## Production recording authority
+
+`mcap-bagger --config profile.yaml` retains the existing simulation-controlled
+behavior. To wait for recorder-only desired state instead, run:
+
+```bash
+mcap-bagger --config profile.yaml --control-mode recording \
+  --recording-state-endpoint tcp://127.0.0.1:5561 \
+  --recording-status-endpoint tcp://127.0.0.1:5562
+```
+
+This mode starts idle, subscribes only to `recording/state` for control and publishes
+`recording/status`. Simulation messages cannot trigger its recording lifecycle.
+New sessions start files; duplicate running state preserves the file; stopped
+state drains/finalizes before confirming idle. Stale/reordered state is ignored,
+and three seconds without updates closes recording. File/worker errors are
+reported as errors, never successful finalization. The optional `--ready-file`
+marks installed control subscriptions, not active recording.
+
+The production launcher chooses `recorder.control_source: mavlink|godot`, starts
+the recorder before publishers, and closes it last. Its default recorder profile
+logs existing message streams; raw physical camera images require a separate
+publication path. See the [production guide](../../docs/production-bringup.md).

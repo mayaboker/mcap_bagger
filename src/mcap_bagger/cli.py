@@ -9,6 +9,8 @@ from tempfile import NamedTemporaryFile
 
 from .control import ControlledRecorder
 from .recorder import Recorder
+from .recording_control import RecordingController
+from bullet_msgs.recording_control import DEFAULT_STATE_ENDPOINT, DEFAULT_STATUS_ENDPOINT
 
 
 def _prepare_output_directory(path):
@@ -26,10 +28,17 @@ def main():
     parser.add_argument("--config", help="load YAML and wait for simulation runs")
     parser.add_argument("--ready-file", type=Path, help="write readiness marker after control subscriptions are installed")
     parser.add_argument('--output-dir', help='MCAP directory override; requires --config, relative to the working directory')
+    parser.add_argument('--control-mode', choices=('simulation', 'recording'), default='simulation',
+                        help='simulation lifecycle (default) or recorder-only state control')
+    parser.add_argument('--recording-state-endpoint', default=DEFAULT_STATE_ENDPOINT)
+    parser.add_argument('--recording-status-endpoint', default=DEFAULT_STATUS_ENDPOINT)
     args = parser.parse_args()
     if args.output_dir is not None and not args.config:
         parser.error('--output-dir requires --config')
+    if args.control_mode == 'recording' and not args.config:
+        parser.error('--control-mode recording requires --config')
     service = None
+    cleanup_failed = False
     recorder = Recorder(
         on_error=lambda message: print(message, file=sys.stderr, flush=True)
     )
@@ -43,8 +52,13 @@ def main():
         if args.config:
             print(recorder.init(args.config, output_dir=args.output_dir), flush=True)
             _prepare_output_directory(recorder.config.output_dir)
-            service = ControlledRecorder(recorder, report=lambda message: print(message, flush=True))
-            print("Waiting for physics running state; Stop/Reset closes recording", flush=True)
+            if args.control_mode == 'recording':
+                service = RecordingController(recorder, args.recording_state_endpoint,
+                    args.recording_status_endpoint, report=lambda message: print(message, flush=True))
+                print('Waiting for MAVLink recording state; recorder idle', flush=True)
+            else:
+                service = ControlledRecorder(recorder, report=lambda message: print(message, flush=True))
+                print("Waiting for physics running state; Stop/Reset closes recording", flush=True)
             if args.ready_file:
                 args.ready_file.write_text("ready\n")
             while True:
@@ -78,10 +92,14 @@ def main():
         # Ignore repeated shutdown signals while accepted data is drained.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
-        if service is not None:
-            service.close()
-        else:
-            print(recorder.close())
+        try:
+            if service is not None:
+                service.close()
+            else:
+                print(recorder.close())
+        except Exception as error:
+            cleanup_failed = True
+            print(f'Recorder shutdown failed: {error}', file=sys.stderr, flush=True)
         if args.ready_file:
             try:
                 args.ready_file.unlink(missing_ok=True)
@@ -89,7 +107,7 @@ def main():
                 print(f'Could not remove readiness marker: {error}', file=sys.stderr, flush=True)
         signal.signal(signal.SIGTERM, previous)
         signal.signal(signal.SIGINT, previous_interrupt)
-    return 1 if recorder.recording and recorder.recording.error else 0
+    return 1 if cleanup_failed or (recorder.recording and recorder.recording.error) else 0
 
 
 if __name__ == "__main__":
