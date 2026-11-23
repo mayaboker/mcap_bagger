@@ -8,9 +8,3 @@ recordings/
 *.mcap.partial
 
 .ruff_cache/
-
-# Generated development and recording artifacts.
-*.py[cod]
-build/
-*.mcap.flightlens.sqlite
-*.mcap.flightlens.sqlite-*

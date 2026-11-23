@@ -1,0 +1,105 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build wheel",
+      "type": "process",
+      "command": "uv",
+      "args": ["build", "--wheel", "--out-dir", "dist"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "MCAP desktop player",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "--locked", "mcap-bagger", "player"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Publish only (10 seconds)",
+      "type": "process",
+      "command": "uv",
+      "args": [
+        "run",
+        "--locked",
+        "python",
+        "examples/run_demo.py",
+        "--config",
+        "config/recorder.yaml",
+        "--publish-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Record example (10 seconds)",
+      "type": "process",
+      "command": "uv",
+      "args": [
+        "run",
+        "--locked",
+        "python",
+        "examples/run_demo.py",
+        "--config",
+        "config/recorder.yaml"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Read MCAP summary",
+      "type": "process",
+      "command": "uv",
+      "args": [
+        "run",
+        "--locked",
+        "python",
+        "examples/summarize_mcap.py",
+        "${input:mcapPath}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Recording server",
+      "type": "process",
+      "command": "uv",
+      "args": [
+        "run",
+        "--locked",
+        "mcap-bagger",
+        "server",
+        "--config",
+        "config/recorder.yaml",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "9090"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "mcapPath",
+      "type": "promptString",
+      "description": "MCAP file path (absolute or relative to the project folder)"
+    }
+  ]
+}

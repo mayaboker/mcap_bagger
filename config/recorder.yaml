@@ -1,0 +1,53 @@
+project: image_imu
+output_dir: ../recordings
+sync_interval_s: 1.0  # 0 disables periodic sync
+channels:
+  - topic: analysis/physics/ground_truth
+    endpoint: tcp://127.0.0.1:5555
+    shm: false
+  - topic: camera/front/image
+    endpoint: tcp://127.0.0.1:5556
+    shm: true
+    compress: jpeg  # raw or jpeg
+  - topic: camera_info
+    endpoint: tcp://127.0.0.1:5555
+    shm: false
+  - topic: imu
+    endpoint: tcp://127.0.0.1:5555
+    shm: false
+  - topic: telemetry/heartbeat
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: telemetry/attitude
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: telemetry/vfr_hud
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: telemetry/gps_raw_int
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: telemetry/global_position_int
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: telemetry/timesync
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: control/msp_rc
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: visual/bbox
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: simulation/target_contact
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: features/navigation_input
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: features/navigation_result
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
+  - topic: view/alive
+    endpoint: tcp://127.0.0.1:5558
+    shm: false
